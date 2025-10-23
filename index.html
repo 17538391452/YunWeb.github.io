@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>极简媒体展示</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind自定义主题 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#1A1A1A',
+                        darker: '#121212',
+                        gold: '#D4AF37',
+                        'gold-light': '#F0E68C',
+                        gray: {
+                            800: '#2D2D2D',
+                            700: '#3D3D3D',
+                            600: '#4A4A4A',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .audio-thumb {
+                @apply appearance-none w-5 h-5 rounded-full bg-gold border-none cursor-pointer shadow-md hover:bg-gold-light transition-colors duration-200;
+            }
+            .progress-track {
+                @apply h-1.5 rounded-full bg-gray-700 appearance-none cursor-pointer;
+            }
+        }
+    </style>
+</head>
+<body class="bg-darker text-gray-200 min-h-screen font-sans">
+    <!-- 页面容器 -->
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <!-- 顶部标题 -->
+        <header class="text-center mb-12">
+            <h1 class="text-[clamp(1.8rem,4vw,2.5rem)] font-light tracking-wider">
+                <span class="text-white">极简</span>
+                <span class="text-gold">媒体</span>
+            </h1>
+            <div class="w-24 h-0.5 bg-gold mx-auto mt-3 opacity-70"></div>
+        </header>
+        
+        <!-- 主内容区 -->
+        <main class="space-y-10">
+            <!-- 图片展示区 -->
+            <div class="relative overflow-hidden rounded-lg shadow-2xl transform hover:scale-[1.01] transition-transform duration-500">
+                <img src="https://picsum.photos/id/1073/1200/600" 
+                     alt="精选图片" 
+                     class="w-full h-auto object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-dark/70 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
+            </div>
+            
+            <!-- 音频播放器 -->
+            <div class="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 shadow-xl border border-gray-700/30">
+                <h2 class="text-xl font-light mb-4 flex items-center">
+                    <i class="fa fa-music text-gold mr-2"></i>
+                    <span>背景音乐</span>
+                </h2>
+                
+                <div class="space-y-5">
+                    <!-- 音频控制区 -->
+                    <div class="flex items-center justify-between">
+                        <!-- 播放/暂停按钮 -->
+                        <button id="playPauseBtn" class="w-12 h-12 rounded-full bg-gold/10 hover:bg-gold/20 flex items-center justify-center transition-all duration-300 border border-gold/30">
+                            <i id="playIcon" class="fa fa-play text-gold text-xl"></i>
+                            <i id="pauseIcon" class="fa fa-pause text-gold text-xl hidden"></i>
+                        </button>
+                        
+                        <!-- 音频标题 -->
+                        <div class="flex-1 mx-6 overflow-hidden">
+                            <p class="text-white truncate">Ambient Soundscape</p>
+                            <p class="text-gray-400 text-sm truncate">Relaxing Background Music</p>
+                        </div>
+                        
+                        <!-- 音量控制 -->
+                        <div class="flex items-center space-x-3 w-40">
+                            <i id="volumeIcon" class="fa fa-volume-up text-gray-400 hover:text-gold transition-colors"></i>
+                            <input type="range" id="volumeSlider" min="0" max="100" value="80" 
+                                   class="progress-track w-full accent-gold">
+                        </div>
+                    </div>
+                    
+                    <!-- 进度条和时间 -->
+                    <div class="space-y-2">
+                        <!-- 进度条 -->
+                        <div class="relative group">
+                            <input type="range" id="progressBar" min="0" max="100" value="0" 
+                                   class="progress-track w-full accent-gold">
+                            <div class="absolute top-0 left-0 h-full bg-gold/20 rounded-full w-0" id="progressBuffer"></div>
+                        </div>
+                        
+                        <!-- 时间显示 -->
+                        <div class="flex justify-between text-sm text-gray-400">
+                            <span id="currentTime">00:00</span>
+                            <span id="totalTime">00:00</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 隐藏的音频元素 -->
+                <audio id="audioPlayer" preload="metadata">
+                    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+                    您的浏览器不支持音频播放
+                </audio>
+            </div>
+        </main>
+        
+        <!-- 页脚 -->
+        <footer class="mt-16 text-center text-gray-500 text-sm pb-6">
+            <p>© 2023 极简媒体展示 | 设计与开发</p>
+        </footer>
+    </div>
+
+    <script>
+        // 音频播放器功能实现
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取DOM元素
+            const audioPlayer = document.getElementById('audioPlayer');
+            const playPauseBtn = document.getElementById('playPauseBtn');
+            const playIcon = document.getElementById('playIcon');
+            const pauseIcon = document.getElementById('pauseIcon');
+            const progressBar = document.getElementById('progressBar');
+            const progressBuffer = document.getElementById('progressBuffer');
+            const currentTimeDisplay = document.getElementById('currentTime');
+            const totalTimeDisplay = document.getElementById('totalTime');
+            const volumeSlider = document.getElementById('volumeSlider');
+            const volumeIcon = document.getElementById('volumeIcon');
+            
+            // 播放/暂停功能
+            playPauseBtn.addEventListener('click', togglePlayPause);
+            
+            function togglePlayPause() {
+                if (audioPlayer.paused || audioPlayer.ended) {
+                    audioPlayer.play();
+                    playIcon.classList.add('hidden');
+                    pauseIcon.classList.remove('hidden');
+                    playPauseBtn.classList.add('bg-gold/20');
+                } else {
+                    audioPlayer.pause();
+                    pauseIcon.classList.add('hidden');
+                    playIcon.classList.remove('hidden');
+                    playPauseBtn.classList.remove('bg-gold/20');
+                }
+            }
+            
+            // 格式化时间（秒 -> MM:SS）
+            function formatTime(seconds) {
+                if (isNaN(seconds)) return '00:00';
+                const minutes = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+            
+            // 音频元数据加载完成后更新总时长
+            audioPlayer.addEventListener('loadedmetadata', function() {
+                totalTimeDisplay.textContent = formatTime(audioPlayer.duration);
+            });
+            
+            // 实时更新进度条和当前时间
+            audioPlayer.addEventListener('timeupdate', function() {
+                const progress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+                progressBar.value = progress;
+                currentTimeDisplay.textContent = formatTime(audioPlayer.currentTime);
+                
+                // 更新缓冲进度
+                updateBufferProgress();
+            });
+            
+            // 更新缓冲进度
+            function updateBufferProgress() {
+                if (audioPlayer.buffered.length > 0) {
+                    const bufferedEnd = audioPlayer.buffered.end(audioPlayer.buffered.length - 1);
+                    const duration = audioPlayer.duration;
+                    if (duration > 0) {
+                        const bufferedPercent = (bufferedEnd / duration) * 100;
+                        progressBuffer.style.width = `${bufferedPercent}%`;
+                    }
+                }
+            }
+            
+            // 音频结束时重置状态
+            audioPlayer.addEventListener('ended', function() {
+                pauseIcon.classList.add('hidden');
+                playIcon.classList.remove('hidden');
+                playPauseBtn.classList.remove('bg-gold/20');
+            });
+            
+            // 通过进度条控制音频进度
+            progressBar.addEventListener('input', function() {
+                const seekTime = (this.value / 100) * audioPlayer.duration;
+                audioPlayer.currentTime = seekTime;
+            });
+            
+            // 音量控制
+            volumeSlider.addEventListener('input', function() {
+                audioPlayer.volume = this.value / 100;
+                updateVolumeIcon();
+            });
+            
+            // 更新音量图标
+            function updateVolumeIcon() {
+                const volume = audioPlayer.volume;
+                volumeIcon.className = 'fa';
+                
+                if (volume === 0) {
+                    volumeIcon.classList.add('fa-volume-off');
+                } else if (volume < 0.5) {
+                    volumeIcon.classList.add('fa-volume-down');
+                } else {
+                    volumeIcon.classList.add('fa-volume-up');
+                }
+                
+                volumeIcon.classList.add('text-gray-400', 'hover:text-gold', 'transition-colors');
+            }
+            
+            // 点击音量图标切换静音
+            volumeIcon.addEventListener('click', function() {
+                const wasMuted = audioPlayer.muted;
+                audioPlayer.muted = !wasMuted;
+                
+                if (wasMuted) {
+                    volumeSlider.value = audioPlayer.volume * 100;
+                } else {
+                    volumeSlider.value = 0;
+                }
+                
+                updateVolumeIcon();
+            });
+            
+            // 初始化音量
+            audioPlayer.volume = volumeSlider.value / 100;
+        });
+    </script>
+</body>
+</html>
